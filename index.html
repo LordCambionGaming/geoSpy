@@ -202,10 +202,11 @@ function randomZone(){
   };
 }
 
-const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=3000;
+const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=8000;
 let viewer=null,lmap=null,resMap=null,isViewerReady=false;
 let round=0,totalScore=0,roundScores=[],guessLL=null,guessMarker=null;
 let shuffled=[],fbTimer=null,mapBig=false;
+let currentAttemptToken = 0; // Previene accavallamenti tra caricamenti
 
 function haversine(la1,lo1,la2,lo2){
   const R=6371,dL=(la2-la1)*Math.PI/180,dN=(lo2-lo1)*Math.PI/180;
@@ -272,7 +273,7 @@ async function fetchImageId(bbox){
   const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id,geometry&bbox=${bbox}&is_pano=true&limit=10`;
   try{
     const r=await fetch(url);
-    if(!r.ok) return null; // Salta immediatamente in caso di errore 500
+    if(!r.ok) return null;
     const d=await r.json();
     const imgs=d.data||[];
     if(!imgs.length) return null;
@@ -327,29 +328,34 @@ async function loadRound(){
 }
 
 async function findAndLoadImage(attempt=0){
-  if(attempt > 10){
+  currentAttemptToken++;
+  let myToken = currentAttemptToken;
+
+  if(attempt > 15){
     setVeil(false);
-    showToast('I server di Mapillary sono sovraccarichi. Tira a indovinare!');
+    showToast('Impossibile caricare immagini. Tira a indovinare sulla mappa!');
     document.getElementById('btn-confirm').classList.add('show');
     return;
   }
   
-  setVeil(true, attempt > 0 ? `Cerco un'area valida... (${attempt}/10)` : 'Teletrasporto in corso...');
+  setVeil(true, attempt > 0 ? `Cerco un'area valida... (${attempt}/15)` : 'Teletrasporto in corso...');
   
   const zone = randomZone();
   const imageData = await fetchImageId(zone.bbox);
   
+  // Se nel frattempo è partito un altro caricamento, fermati.
+  if (myToken !== currentAttemptToken) return;
+
   if(!imageData){
     return findAndLoadImage(attempt+1);
   }
   
   shuffled[round] = { lat: imageData.geometry.coordinates[1], lng: imageData.geometry.coordinates[0] };
   
-  // Distruggiamo e ricreiamo SEMPRE il visualizzatore per ripulire vecchi crash di Mapillary
-  createViewer(imageData.id, attempt);
+  createViewer(imageData.id, attempt, myToken);
 }
 
-function createViewer(imageId, attempt){
+function createViewer(imageId, attempt, myToken){
   if(viewer){
     try{viewer.remove()}catch(e){}
     viewer=null;
@@ -362,28 +368,32 @@ function createViewer(imageId, attempt){
       accessToken:TOKEN,
       container:'mly',
       imageId:imageId,
-      // IMPORTANTISSIMO: niente componente "spatial" per evitare il blocco per mesh corrotte!
       component:{cover:false, navigation:true, sequence:true, direction:true}
     });
     
     viewer.on('load', () => {
+      // Se questo caricamento è vecchio, ignoralo
+      if (myToken !== currentAttemptToken) return;
+      
       isViewerReady = true;
       clearFb();
       setVeil(false);
       viewer.resize();
     });
     
-    startFbTimer(attempt);
+    startFbTimer(attempt, myToken);
   }catch(e){
-    findAndLoadImage(attempt+1);
+    if (myToken === currentAttemptToken) {
+      findAndLoadImage(attempt+1);
+    }
   }
 }
 
-function startFbTimer(attempt){
+function startFbTimer(attempt, myToken){
   clearFb();
   fbTimer=setTimeout(()=>{
-    if(!isViewerReady){
-      // Se dopo 3 secondi il viewer non ha emesso l'evento 'load', scartiamo la foto
+    // Scatta solo se è il caricamento corrente e non ha ancora finito
+    if(myToken === currentAttemptToken && !isViewerReady){
       findAndLoadImage(attempt+1); 
     }
   }, FB_TIMEOUT);
