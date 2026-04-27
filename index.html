@@ -201,18 +201,49 @@ if (!TOKEN) {
   document.querySelector('.btn-start').disabled = true;
 }
 
-const LOCATIONS = [
-  { label:'Torre Eiffel, Parigi',       lat:48.8584, lng:2.2945,   bbox:'2.290,48.855,2.298,48.862' },
-  { label:'Colosseo, Roma',             lat:41.8902, lng:12.4922,  bbox:'12.488,41.888,12.496,41.892' },
-  { label:'Sagrada Familia, Barcellona',lat:41.4036, lng:2.1744,   bbox:'2.172,41.401,2.178,41.407' },
-  { label:'Times Square, New York',     lat:40.7580, lng:-73.9855, bbox:'-73.989,40.755,-73.982,40.761' },
-  { label:'Shibuya Crossing, Tokyo',    lat:35.6598, lng:139.7004, bbox:'139.698,35.657,139.703,35.662' },
-  { label:'Big Ben, Londra',            lat:51.5007, lng:-0.1246,  bbox:'-0.127,51.498,-0.121,51.503' },
-  { label:'Acropoli, Atene',            lat:37.9715, lng:23.7257,  bbox:'23.722,37.969,23.728,37.974' },
-  { label:'Burj Khalifa, Dubai',        lat:25.1972, lng:55.2744,  bbox:'55.272,25.195,55.278,25.200' },
-  { label:'Machu Picchu, Perù',         lat:-13.1631,lng:-72.5450, bbox:'-72.548,-13.166,-72.542,-13.160' },
-  { label:'Piazza Rossa, Mosca',        lat:55.7539, lng:37.6208,  bbox:'37.618,55.751,37.624,55.757' },
+// Punti sparsi nel mondo con buona copertura Mapillary — completamente random ogni partita
+const WORLD_ZONES = [
+  // Europa
+  {lat:48.85,lng:2.35},{lat:51.50,lng:-0.12},{lat:41.90,lng:12.49},{lat:52.52,lng:13.40},
+  {lat:40.41,lng:-3.70},{lat:48.20,lng:16.37},{lat:50.08,lng:14.43},{lat:53.34,lng:-6.26},
+  {lat:59.33,lng:18.06},{lat:55.67,lng:12.57},{lat:60.17,lng:24.94},{lat:47.37,lng:8.54},
+  {lat:45.46,lng:9.19},{lat:43.30,lng:5.37},{lat:50.85,lng:4.35},{lat:52.37,lng:4.90},
+  {lat:38.72,lng:-9.14},{lat:37.98,lng:23.73},{lat:44.80,lng:20.46},{lat:47.50,lng:19.04},
+  // Nord America
+  {lat:40.71,lng:-74.01},{lat:34.05,lng:-118.24},{lat:41.88,lng:-87.63},{lat:29.76,lng:-95.37},
+  {lat:33.45,lng:-112.07},{lat:47.61,lng:-122.33},{lat:25.77,lng:-80.19},{lat:37.77,lng:-122.42},
+  {lat:45.42,lng:-75.69},{lat:43.65,lng:-79.38},{lat:45.51,lng:-73.55},{lat:49.25,lng:-123.12},
+  {lat:19.43,lng:-99.13},{lat:20.97,lng:-89.62},{lat:14.09,lng:-87.20},{lat:9.93,lng:-84.08},
+  // Sud America
+  {lat:-23.55,lng:-46.63},{lat:-34.61,lng:-58.38},{lat:-33.46,lng:-70.65},{lat:-12.05,lng:-77.04},
+  {lat:-15.78,lng:-47.93},{lat:4.71,lng:-74.07},{lat:10.48,lng:-66.90},
+  // Asia
+  {lat:35.69,lng:139.69},{lat:37.57,lng:126.98},{lat:31.23,lng:121.47},{lat:39.90,lng:116.40},
+  {lat:1.35,lng:103.82},{lat:13.75,lng:100.52},{lat:3.14,lng:101.69},
+  {lat:28.61,lng:77.21},{lat:19.08,lng:72.88},{lat:12.97,lng:77.59},
+  {lat:35.68,lng:51.39},{lat:41.30,lng:69.24},{lat:43.24,lng:76.95},
+  // Medio Oriente
+  {lat:25.20,lng:55.27},{lat:24.69,lng:46.72},{lat:30.06,lng:31.25},{lat:33.89,lng:35.50},
+  // Africa
+  {lat:-33.92,lng:18.42},{lat:-26.20,lng:28.04},{lat:-1.29,lng:36.82},{lat:5.56,lng:-0.21},
+  {lat:6.37,lng:2.39},{lat:-18.91,lng:47.54},{lat:-4.32,lng:15.32},
+  // Oceania
+  {lat:-33.87,lng:151.21},{lat:-37.81,lng:144.96},{lat:-27.47,lng:153.02},{lat:-36.87,lng:174.76},
 ];
+
+// Genera bbox casuale di ~0.03° attorno a un punto world zone
+function randomZone(){
+  const z=WORLD_ZONES[Math.floor(Math.random()*WORLD_ZONES.length)];
+  // Aggiungi piccolo jitter per variare ogni partita
+  const jLat=(Math.random()-0.5)*0.04;
+  const jLng=(Math.random()-0.5)*0.04;
+  const d=0.015;
+  const lat=z.lat+jLat, lng=z.lng+jLng;
+  return {
+    lat, lng,
+    bbox:`${(lng-d).toFixed(5)},${(lat-d).toFixed(5)},${(lng+d).toFixed(5)},${(lat+d).toFixed(5)}`
+  };
+}
 
 const D_DECAY=2000, MAX_SCORE=5000, TOTAL_ROUNDS=5, PERFECT_KM=0.1, FB_TIMEOUT=10000;
 
@@ -312,7 +343,8 @@ function startGame(){
 }
 
 function resetState(){
-  shuffled=shuffle(LOCATIONS).slice(0,TOTAL_ROUNDS);
+  // Le zone vengono generate live a ogni round — niente lista prefissata
+  shuffled=[];
   round=0; totalScore=0; roundScores=[];
   guessLL=null; guessMarker=null; mapBig=false;
   document.getElementById('map-wrap').classList.remove('big');
@@ -340,24 +372,47 @@ async function loadRound(){
   setVeil(true,'Ricerca immagine…');
   resetGuessUI();
   updateHUD();
+  await findAndLoadImage();
+}
 
-  const loc=shuffled[round];
-  const imageId=await fetchImageId(loc.bbox);
-
-  if(!imageId){
+// Cerca un'immagine con retry su zone diverse finché non ne trova una
+async function findAndLoadImage(attempt=0){
+  if(attempt>12){
     setVeil(false);
-    showToast('⚠️ Nessuna immagine trovata per questa location.');
+    showToast('⚠️ Impossibile trovare immagini. Controlla il token.');
     document.getElementById('btn-confirm').classList.add('show');
     return;
   }
+  const zone=randomZone();
+  // Salva lat/lng del round corrente per il calcolo del punteggio
+  if(!shuffled[round]) shuffled[round]={lat:zone.lat,lng:zone.lng};
+  else { shuffled[round].lat=zone.lat; shuffled[round].lng=zone.lng; }
 
+  setVeil(true,`Ricerca immagine… (zona ${attempt+1})`);
+  const imageId=await fetchImageId(zone.bbox);
+  if(!imageId){
+    await findAndLoadImage(attempt+1);
+    return;
+  }
+  // Aggiorna lat/lng con le coordinate esatte dell'immagine trovata (bbox center ok)
+  shuffled[round]={lat:zone.lat,lng:zone.lng};
   if(!viewer) createViewer(imageId);
   else moveTo(imageId);
+}
+
+let readyFired=false;
+function onReady(){
+  if(readyFired) return;
+  readyFired=true;
+  clearFb();
+  setVeil(false);
+  viewer.resize();
 }
 
 function createViewer(imageId){
   if(viewer){try{viewer.remove()}catch(e){}viewer=null}
   document.getElementById('mly').innerHTML='';
+  readyFired=false;
   try{
     viewer=new mapillary.Viewer({
       accessToken:TOKEN,
@@ -366,7 +421,6 @@ function createViewer(imageId){
       component:{cover:false,navigation:true,sequence:true,direction:true}
     });
     viewer.on(mapillary.ViewerEventType.LOAD,onReady);
-    viewer.on(mapillary.ViewerEventType.IMAGE,onReady);
     startFbTimer();
   }catch(e){
     console.error(e);
@@ -376,17 +430,12 @@ function createViewer(imageId){
 }
 
 function moveTo(imageId){
+  readyFired=false;
   viewer.moveTo(imageId).then(onReady).catch(()=>{
     setVeil(false);
     showToast('⚠️ Impossibile caricare questa immagine.');
   });
   startFbTimer();
-}
-
-function onReady(){
-  clearFb();
-  setVeil(false);
-  viewer.resize();
 }
 
 function startFbTimer(){
@@ -441,6 +490,7 @@ function nextRound(){
   document.getElementById('round-ov').classList.remove('show');
   round++;
   if(round>=TOTAL_ROUNDS){showFinal();return}
+  shuffled[round]=null; // verrà popolato da findAndLoadImage
   resetGuessUI();
   loadRound();
 }
@@ -488,6 +538,7 @@ function showFinal(){
 
 function restartGame(){
   clearFb();
+  readyFired=false;
   document.getElementById('final-ov').classList.remove('show');
   document.getElementById('round-ov').classList.remove('show');
   resetState();
