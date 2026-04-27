@@ -270,9 +270,13 @@ const WORLD_ZONES = [
 
 function randomZone(){
   const z=WORLD_ZONES[Math.floor(Math.random()*WORLD_ZONES.length)];
-  const jLat=(Math.random()-0.5)*0.04;
-  const jLng=(Math.random()-0.5)*0.04;
-  const d=0.04; // Box ingrandito per trovare più facilmente le foto
+  // Ci spostiamo casualmente dal centro della città
+  const jLat=(Math.random()-0.5)*0.03;
+  const jLng=(Math.random()-0.5)*0.03;
+  
+  // Scatola più piccola (circa 1x1 km) per non far esplodere i server di Mapillary
+  const d=0.005; 
+  
   const lat=z.lat+jLat, lng=z.lng+jLng;
   return {
     lat, lng,
