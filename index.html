@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,17 +19,50 @@
 }
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);overflow:hidden}
 
-#splash{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+/* Nuovo Splash Screen */
+#splash {
+  position: fixed; inset: 0; z-index: 999;
+  background: radial-gradient(circle at center, var(--surface2) 0%, var(--bg) 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
 #splash.out{animation:fadeOut .5s ease forwards}
 @keyframes fadeOut{to{opacity:0;pointer-events:none}}
+
+.menu-box {
+  background: rgba(17, 21, 32, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 50px 60px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
 .logo{font-family:var(--fh);font-size:clamp(52px,10vw,92px);color:var(--accent);letter-spacing:5px;line-height:1;text-shadow:0 0 80px var(--glow)}
 .tagline{font-size:11px;color:var(--muted);letter-spacing:4px;text-transform:uppercase}
 .splash-hr{width:48px;height:1px;background:var(--border)}
 .splash-desc{font-size:14px;color:var(--muted);text-align:center;max-width:340px;line-height:1.7}
-.btn-start{margin-top:8px;padding:14px 52px;background:var(--accent);color:#08090c;border:none;border-radius:50px;font-family:var(--fh);font-size:22px;letter-spacing:3px;cursor:pointer;box-shadow:0 4px 28px var(--glow);transition:transform .15s,box-shadow .15s}
+
+.menu-actions {
+  display: flex; flex-direction: column; gap: 15px; width: 100%; margin-top: 10px;
+}
+.btn-start {
+  width: 100%; padding: 16px; background: var(--accent); color: #08090c;
+  border: none; border-radius: 50px; font-family: var(--fh); font-size: 24px; letter-spacing: 2px;
+  cursor: pointer; box-shadow: 0 4px 28px var(--glow); transition: transform .15s, box-shadow .15s;
+}
 .btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 40px rgba(242,199,68,.5)}
 .btn-start:active{transform:translateY(0)}
 
+.btn-github {
+  width: 100%; padding: 12px; background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 50px;
+  font-family: var(--fb); font-size: 14px; text-decoration: none;
+  cursor: pointer; transition: all .2s;
+}
+.btn-github:hover { border-color: var(--text); color: var(--text); }
+
+/* Gioco e Mappa */
 #game{position:fixed;inset:0;display:none}
 #mly{position:absolute;inset:0;width:100vw;height:100vh}
 
@@ -65,6 +98,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   pointer-events:none;
 }
 #map-hint{
+  position:absolute;bottom:260px;right:22px;z-index:201;
   font-size:11px;color:var(--muted);letter-spacing:1px;
   background:rgba(8,11,15,.7);padding:4px 10px;border-radius:20px;
   pointer-events:none;transition:opacity .3s;
@@ -72,6 +106,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 }
 #map-hint.gone{opacity:0}
 #btn-confirm{
+  position:absolute;bottom:260px;right:22px;z-index:201;
   padding:11px 30px;background:var(--accent);color:#08090c;
   border:none;border-radius:50px;font-family:var(--fh);font-size:19px;letter-spacing:2px;
   cursor:pointer;pointer-events:none;
@@ -96,6 +131,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 #toast{position:absolute;top:72px;left:50%;transform:translateX(-50%);background:#2a0f0f;border:1px solid var(--err);color:#f08080;font-size:12px;letter-spacing:1px;padding:9px 20px;border-radius:50px;z-index:300;opacity:0;pointer-events:none;transition:opacity .3s;max-width:90vw;text-align:center}
 #toast.show{opacity:1}
 
+/* Modali di fine round/partita */
 #round-ov{position:fixed;inset:0;z-index:500;background:rgba(4,6,10,.87);backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center}
 #round-ov.show{display:flex}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:34px 42px;max-width:500px;width:92%;text-align:center;box-shadow:var(--sh);animation:popIn .38s cubic-bezier(.2,.8,.3,1) forwards}
@@ -136,11 +172,17 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 <body>
 
 <div id="splash">
-  <div class="logo">GeoSpy</div>
-  <div class="tagline">Street View World Explorer</div>
-  <div class="splash-hr"></div>
-  <p class="splash-desc">Esplora il mondo attraverso gli occhi di Mapillary.<br>5 round — indovina dove ti trovi.</p>
-  <button class="btn-start" onclick="startGame()">INIZIA &nbsp;→</button>
+  <div class="menu-box">
+    <div class="logo">GeoSpy</div>
+    <div class="tagline">Street View World Explorer</div>
+    <div class="splash-hr"></div>
+    <p class="splash-desc">Esplora il mondo attraverso gli occhi di Mapillary.<br>5 round — indovina dove ti trovi.</p>
+    
+    <div class="menu-actions">
+      <button class="btn-start" onclick="startGame()">▶ GIOCA ORA</button>
+      <a href="https://github.com/LordCambionGaming/geoSpy" target="_blank" class="btn-github">Codice su GitHub</a>
+    </div>
+  </div>
 </div>
 
 <div id="game">
@@ -186,22 +228,18 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   </div>
 </div>
 
-<!-- Token iniettato da GitHub Actions — NON presente nel repo -->
 <script src="config.js"></script>
 <script src="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const TOKEN = (typeof window.MAPILLARY_TOKEN !== 'undefined')
-  ? window.MAPILLARY_TOKEN
-  : '';
+const TOKEN = (typeof window.MAPILLARY_TOKEN !== 'undefined') ? window.MAPILLARY_TOKEN : '';
 
 if (!TOKEN) {
   document.querySelector('.splash-desc').textContent =
-    '⚠️ Token mancante. Configura il secret MAPILLARY_TOKEN su GitHub Actions.';
+    '⚠️ Manca il file config.js o il token Mapillary.';
   document.querySelector('.btn-start').disabled = true;
 }
 
-// Punti sparsi nel mondo con buona copertura Mapillary — completamente random ogni partita
 const WORLD_ZONES = [
   // Europa
   {lat:48.85,lng:2.35},{lat:51.50,lng:-0.12},{lat:41.90,lng:12.49},{lat:52.52,lng:13.40},
@@ -231,13 +269,11 @@ const WORLD_ZONES = [
   {lat:-33.87,lng:151.21},{lat:-37.81,lng:144.96},{lat:-27.47,lng:153.02},{lat:-36.87,lng:174.76},
 ];
 
-// Genera bbox casuale di ~0.03° attorno a un punto world zone
 function randomZone(){
   const z=WORLD_ZONES[Math.floor(Math.random()*WORLD_ZONES.length)];
-  // Aggiungi piccolo jitter per variare ogni partita
   const jLat=(Math.random()-0.5)*0.04;
   const jLng=(Math.random()-0.5)*0.04;
-  const d=0.015;
+  const d=0.04; // Box ingrandito per trovare più facilmente le foto
   const lat=z.lat+jLat, lng=z.lng+jLng;
   return {
     lat, lng,
@@ -313,17 +349,26 @@ function toggleMap(){
   setTimeout(()=>{if(lmap)lmap.invalidateSize()},340);
 }
 
+// Nuova funzione per chiamare l'API con gestione errori e log in console
 async function fetchImageId(bbox){
   const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id&bbox=${bbox}&limit=20`;
   try{
     const r=await fetch(url);
-    if(!r.ok) return null;
+    if(!r.ok) {
+      const errorData = await r.json();
+      console.error("Errore API Mapillary:", errorData);
+      return null;
+    }
     const d=await r.json();
     const imgs=d.data||[];
-    if(!imgs.length) return null;
+    if(!imgs.length) {
+      console.warn("Nessuna immagine trovata in quest'area:", bbox);
+      return null;
+    }
     const pick=imgs[Math.floor(Math.random()*imgs.length)];
     return pick.id;
   }catch(e){
+    console.error("Errore di rete o fetch fallito:", e);
     return null;
   }
 }
@@ -343,7 +388,6 @@ function startGame(){
 }
 
 function resetState(){
-  // Le zone vengono generate live a ogni round — niente lista prefissata
   shuffled=[];
   round=0; totalScore=0; roundScores=[];
   guessLL=null; guessMarker=null; mapBig=false;
@@ -353,9 +397,23 @@ function resetState(){
 
 function initLeaflet(){
   if(lmap){lmap.remove();lmap=null}
-  lmap=L.map('lmap',{center:[20,0],zoom:2,zoomControl:false,attributionControl:false});
+  
+  // Limiti per impedire di scorrere fuori dal mondo
+  const bounds = L.latLngBounds(L.latLng(-89.981557, -180), L.latLng(89.993461, 180));
+
+  lmap=L.map('lmap',{
+    center:[20,0],
+    zoom:2,
+    minZoom: 2, 
+    maxBounds: bounds, 
+    maxBoundsViscosity: 1.0, 
+    zoomControl:false,
+    attributionControl:false
+  });
+  
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    {subdomains:'abcd',maxZoom:19}).addTo(lmap);
+    {subdomains:'abcd',maxZoom:19, noWrap: true}).addTo(lmap);
+  
   lmap.on('click',onMapClick);
 }
 
@@ -375,16 +433,14 @@ async function loadRound(){
   await findAndLoadImage();
 }
 
-// Cerca un'immagine con retry su zone diverse finché non ne trova una
 async function findAndLoadImage(attempt=0){
   if(attempt>12){
     setVeil(false);
-    showToast('⚠️ Impossibile trovare immagini. Controlla il token.');
+    showToast('⚠️ Impossibile trovare immagini. Controlla il token o la console F12.');
     document.getElementById('btn-confirm').classList.add('show');
     return;
   }
   const zone=randomZone();
-  // Salva lat/lng del round corrente per il calcolo del punteggio
   if(!shuffled[round]) shuffled[round]={lat:zone.lat,lng:zone.lng};
   else { shuffled[round].lat=zone.lat; shuffled[round].lng=zone.lng; }
 
@@ -394,7 +450,6 @@ async function findAndLoadImage(attempt=0){
     await findAndLoadImage(attempt+1);
     return;
   }
-  // Aggiorna lat/lng con le coordinate esatte dell'immagine trovata (bbox center ok)
   shuffled[round]={lat:zone.lat,lng:zone.lng};
   if(!viewer) createViewer(imageId);
   else moveTo(imageId);
@@ -490,7 +545,7 @@ function nextRound(){
   document.getElementById('round-ov').classList.remove('show');
   round++;
   if(round>=TOTAL_ROUNDS){showFinal();return}
-  shuffled[round]=null; // verrà popolato da findAndLoadImage
+  shuffled[round]=null; 
   resetGuessUI();
   loadRound();
 }
