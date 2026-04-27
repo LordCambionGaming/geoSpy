@@ -194,8 +194,8 @@ function randomZone(){
   const z=WORLD_ZONES[Math.floor(Math.random()*WORLD_ZONES.length)];
   const jLat=(Math.random()-0.5)*0.03;
   const jLng=(Math.random()-0.5)*0.03;
-  // Area di circa 1x1 km per alleggerire ulteriormente la ricerca
-  const d=0.005; 
+  // BBox microscopico per evitare l'errore 500
+  const d=0.002; 
   const lat=z.lat+jLat, lng=z.lng+jLng;
   return{
     lat,lng,
@@ -203,7 +203,7 @@ function randomZone(){
   };
 }
 
-const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=15000;
+const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=3500;
 let viewer=null,lmap=null,resMap=null;
 let round=0,totalScore=0,roundScores=[],guessLL=null,guessMarker=null;
 let shuffled=[],fbTimer=null,mapBig=false;
@@ -270,16 +270,13 @@ function toggleMap(){
 }
 
 async function fetchImageId(bbox){
-  // Aggiunto &is_pano=true per filtrare solo le immagini a 360° ed evitare l'errore 500
-  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id&bbox=${bbox}&is_pano=true&limit=10`;
+  // Aggiunto &fields=id,geometry per estrarre il punto esatto. Limitato a 1.
+  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id,geometry&bbox=${bbox}&is_pano=true&limit=1`;
   try{
     const r=await fetch(url);
     if(!r.ok) return null;
     const d=await r.json();
-    const imgs=d.data||[];
-    if(!imgs.length) return null;
-    // Peschiamo un'immagine a caso tra quelle trovate
-    return imgs[Math.floor(Math.random()*imgs.length)].id;
+    return (d.data && d.data.length > 0) ? d.data[0] : null;
   }catch(e){
     return null;
   }
@@ -324,32 +321,37 @@ function onMapClick(e){
 }
 
 async function loadRound(){
-  setVeil(true,'Ricerca immagine…');
   resetGuessUI();
   updateHUD();
-  await findAndLoadImage();
+  await findAndLoadImage(0);
 }
 
 async function findAndLoadImage(attempt=0){
-  if(attempt>15){
+  if(attempt > 20){
     setVeil(false);
-    showToast('I server di Mapillary fanno i capricci. Tira a indovinare sulla mappa!');
+    showToast('Impossibile connettersi a Mapillary. Tira a indovinare!');
     document.getElementById('btn-confirm').classList.add('show');
     return;
   }
-  const zone=randomZone();
-  if(!shuffled[round])shuffled[round]={lat:zone.lat,lng:zone.lng};
-  else{shuffled[round].lat=zone.lat;shuffled[round].lng=zone.lng;}
   
-  setVeil(true,`Cerco un'immagine... (tentativo ${attempt+1})`);
-  const imageId=await fetchImageId(zone.bbox);
-  if(!imageId){
+  setVeil(true, attempt > 0 ? `Cerco un'area valida... (${attempt})` : 'Teletrasporto in corso...');
+  
+  const zone=randomZone();
+  const imageData=await fetchImageId(zone.bbox);
+  
+  if(!imageData){
     await findAndLoadImage(attempt+1);
     return;
   }
-  shuffled[round]={lat:zone.lat,lng:zone.lng};
-  if(!viewer) createViewer(imageId, attempt);
-  else moveTo(imageId, attempt);
+  
+  // Usiamo le coordinate reali precise restituite dall'API per calcolare i punti
+  shuffled[round] = { 
+    lat: imageData.geometry.coordinates[1], 
+    lng: imageData.geometry.coordinates[0] 
+  };
+  
+  if(!viewer) createViewer(imageData.id, attempt);
+  else moveTo(imageData.id, attempt);
 }
 
 let readyFired=false;
@@ -370,12 +372,17 @@ function createViewer(imageId, attempt){
       accessToken:TOKEN,
       container:'mly',
       imageId:imageId,
-      component:{cover:false,navigation:true,sequence:true,direction:true}
+      component:{
+        cover:false,
+        navigation:true, // Frecce a terra
+        sequence:true,   // Navigazione tra le foto
+        direction:true,  
+        spatial:true     // Navigazione 3D fluida
+      }
     });
-    viewer.on('load',onReady);
+    viewer.on('load', onReady);
     startFbTimer(attempt);
   }catch(e){
-    // Se fallisce la creazione, cerca un'altra foto
     findAndLoadImage(attempt+1);
   }
 }
@@ -383,7 +390,7 @@ function createViewer(imageId, attempt){
 function moveTo(imageId, attempt){
   readyFired=false;
   viewer.moveTo(imageId).then(onReady).catch(()=>{
-    // Se Mapillary va in errore 500 su questa foto, passiamo automaticamente alla prossima!
+    // Timeout o errore di Mapillary, passa alla prossima coordinata senza crash
     findAndLoadImage(attempt+1);
   });
   startFbTimer(attempt);
@@ -393,11 +400,9 @@ function startFbTimer(attempt){
   clearFb();
   fbTimer=setTimeout(()=>{
     if(!document.getElementById('veil').classList.contains('gone')){
-      // Se Mapillary ci mette più di 6 secondi a caricare, la foto è probabilmente rotta.
-      // Scartiamola e cerchiamo un'altra zona.
-      findAndLoadImage(attempt+1);
+      findAndLoadImage(attempt+1); // Se il viewer si blocca, riprova subito
     }
-  }, 6000);
+  }, FB_TIMEOUT);
 }
 
 function confirmGuess(){
