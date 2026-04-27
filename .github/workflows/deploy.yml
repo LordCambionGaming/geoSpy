@@ -21,20 +21,22 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
-    steps:
-      - name: Checkout repository
+   steps:
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Genera config.js con il token segreto
+     
+      - name: Inject Mapillary Token
         run: |
-          echo "window.MAPILLARY_TOKEN = '${{ secrets.MAPILLARY_TOKEN }}';" > config.js
-        # ⚠️  config.js NON deve essere nel repository (aggiungilo a .gitignore)
+          sed -i "const TOKEN = (typeof window.MAPILLARY_TOKEN !== 'undefined') ? window.MAPILLARY_TOKEN : '';" index.html
+          sed -i "s|const TOKEN = .*|const TOKEN = '${{ secrets.MAPILLARY_TOKEN }}';|g" index.html
 
-      - name: Upload artifact per GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'   # pubblica tutta la cartella root (index.html + config.js generato)
-
-      - name: Deploy su GitHub Pages
+          path: '.'
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
