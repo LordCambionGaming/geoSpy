@@ -194,7 +194,8 @@ function randomZone(){
   const z=WORLD_ZONES[Math.floor(Math.random()*WORLD_ZONES.length)];
   const jLat=(Math.random()-0.5)*0.03;
   const jLng=(Math.random()-0.5)*0.03;
-  const d=0.01;
+  // Area di circa 1x1 km per alleggerire ulteriormente la ricerca
+  const d=0.005; 
   const lat=z.lat+jLat, lng=z.lng+jLng;
   return{
     lat,lng,
@@ -269,14 +270,16 @@ function toggleMap(){
 }
 
 async function fetchImageId(bbox){
-  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id&bbox=${bbox}&limit=1`;
+  // Aggiunto &is_pano=true per filtrare solo le immagini a 360° ed evitare l'errore 500
+  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id&bbox=${bbox}&is_pano=true&limit=10`;
   try{
     const r=await fetch(url);
-    if(!r.ok)return null;
+    if(!r.ok) return null;
     const d=await r.json();
     const imgs=d.data||[];
-    if(!imgs.length)return null;
-    return imgs[0].id;
+    if(!imgs.length) return null;
+    // Peschiamo un'immagine a caso tra quelle trovate
+    return imgs[Math.floor(Math.random()*imgs.length)].id;
   }catch(e){
     return null;
   }
