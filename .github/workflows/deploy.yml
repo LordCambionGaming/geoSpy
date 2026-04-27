@@ -20,21 +20,22 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-steps:
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Metodo ultra-sicuro per iniettare il token
       - name: Inject Mapillary Token
         run: |
-          sed -i 's/REPLACE_ME_WITH_TOKEN/${{ secrets.MAPILLARY_TOKEN }}/g' index.html
+          sed -i 's|REPLACE_ME_WITH_TOKEN|${{ secrets.MAPILLARY_TOKEN }}|g' index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
