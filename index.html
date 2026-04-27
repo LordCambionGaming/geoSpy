@@ -333,22 +333,23 @@ async function loadRound(){
 async function findAndLoadImage(attempt=0){
   if(attempt>15){
     setVeil(false);
-    showToast('Impossibile trovare immagini. Fai un guess a caso.');
+    showToast('I server di Mapillary fanno i capricci. Tira a indovinare sulla mappa!');
     document.getElementById('btn-confirm').classList.add('show');
     return;
   }
   const zone=randomZone();
   if(!shuffled[round])shuffled[round]={lat:zone.lat,lng:zone.lng};
   else{shuffled[round].lat=zone.lat;shuffled[round].lng=zone.lng;}
-  setVeil(true,`Ricerca immagine… (zona ${attempt+1})`);
+  
+  setVeil(true,`Cerco un'immagine... (tentativo ${attempt+1})`);
   const imageId=await fetchImageId(zone.bbox);
   if(!imageId){
     await findAndLoadImage(attempt+1);
     return;
   }
   shuffled[round]={lat:zone.lat,lng:zone.lng};
-  if(!viewer)createViewer(imageId);
-  else moveTo(imageId);
+  if(!viewer) createViewer(imageId, attempt);
+  else moveTo(imageId, attempt);
 }
 
 let readyFired=false;
@@ -360,7 +361,7 @@ function onReady(){
   viewer.resize();
 }
 
-function createViewer(imageId){
+function createViewer(imageId, attempt){
   if(viewer){try{viewer.remove()}catch(e){}viewer=null}
   document.getElementById('mly').innerHTML='';
   readyFired=false;
@@ -372,31 +373,31 @@ function createViewer(imageId){
       component:{cover:false,navigation:true,sequence:true,direction:true}
     });
     viewer.on('load',onReady);
-    startFbTimer();
+    startFbTimer(attempt);
   }catch(e){
-    setVeil(false);
-    showToast('Errore viewer.');
+    // Se fallisce la creazione, cerca un'altra foto
+    findAndLoadImage(attempt+1);
   }
 }
 
-function moveTo(imageId){
+function moveTo(imageId, attempt){
   readyFired=false;
   viewer.moveTo(imageId).then(onReady).catch(()=>{
-    setVeil(false);
-    showToast('Impossibile caricare questa immagine.');
+    // Se Mapillary va in errore 500 su questa foto, passiamo automaticamente alla prossima!
+    findAndLoadImage(attempt+1);
   });
-  startFbTimer();
+  startFbTimer(attempt);
 }
 
-function startFbTimer(){
+function startFbTimer(attempt){
   clearFb();
   fbTimer=setTimeout(()=>{
     if(!document.getElementById('veil').classList.contains('gone')){
-      setVeil(false);
-      showToast('Il viewer impiega troppo. Prova a fare il guess sulla mappa.');
-      document.getElementById('btn-confirm').classList.add('show');
+      // Se Mapillary ci mette più di 6 secondi a caricare, la foto è probabilmente rotta.
+      // Scartiamola e cerchiamo un'altra zona.
+      findAndLoadImage(attempt+1);
     }
-  },FB_TIMEOUT);
+  }, 6000);
 }
 
 function confirmGuess(){
