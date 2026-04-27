@@ -1,0 +1,40 @@
+name: Deploy GeoSpy su GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Genera config.js con il token segreto
+        run: |
+          echo "window.MAPILLARY_TOKEN = '${{ secrets.MAPILLARY_TOKEN }}';" > config.js
+        # ⚠️  config.js NON deve essere nel repository (aggiungilo a .gitignore)
+
+      - name: Upload artifact per GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'   # pubblica tutta la cartella root (index.html + config.js generato)
+
+      - name: Deploy su GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
