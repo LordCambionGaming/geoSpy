@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GeoSpy — World Explorer</title>
+<title>GeoSpy</title>
 <link rel="stylesheet" href="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,50 +19,21 @@
 }
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);overflow:hidden}
 
-/* Nuovo Splash Screen */
-#splash {
-  position: fixed; inset: 0; z-index: 999;
-  background: radial-gradient(circle at center, var(--surface2) 0%, var(--bg) 100%);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-}
+#splash{position:fixed;inset:0;z-index:999;background:radial-gradient(circle at center,var(--surface2) 0%,var(--bg) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center}
 #splash.out{animation:fadeOut .5s ease forwards}
 @keyframes fadeOut{to{opacity:0;pointer-events:none}}
-
-.menu-box {
-  background: rgba(17, 21, 32, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 50px 60px;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  display: flex; flex-direction: column; align-items: center; gap: 20px;
-}
+.menu-box{background:rgba(17,21,32,.6);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:24px;padding:50px 60px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;gap:20px}
 .logo{font-family:var(--fh);font-size:clamp(52px,10vw,92px);color:var(--accent);letter-spacing:5px;line-height:1;text-shadow:0 0 80px var(--glow)}
 .tagline{font-size:11px;color:var(--muted);letter-spacing:4px;text-transform:uppercase}
 .splash-hr{width:48px;height:1px;background:var(--border)}
 .splash-desc{font-size:14px;color:var(--muted);text-align:center;max-width:340px;line-height:1.7}
-
-.menu-actions {
-  display: flex; flex-direction: column; gap: 15px; width: 100%; margin-top: 10px;
-}
-.btn-start {
-  width: 100%; padding: 16px; background: var(--accent); color: #08090c;
-  border: none; border-radius: 50px; font-family: var(--fh); font-size: 24px; letter-spacing: 2px;
-  cursor: pointer; box-shadow: 0 4px 28px var(--glow); transition: transform .15s, box-shadow .15s;
-}
+.menu-actions{display:flex;flex-direction:column;gap:15px;width:100%;margin-top:10px}
+.btn-start{width:100%;padding:16px;background:var(--accent);color:#08090c;border:none;border-radius:50px;font-family:var(--fh);font-size:24px;letter-spacing:2px;cursor:pointer;box-shadow:0 4px 28px var(--glow);transition:transform .15s,box-shadow .15s}
 .btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 40px rgba(242,199,68,.5)}
 .btn-start:active{transform:translateY(0)}
+.btn-github{width:100%;padding:12px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:50px;font-family:var(--fb);font-size:14px;text-decoration:none;cursor:pointer;transition:all .2s}
+.btn-github:hover{border-color:var(--text);color:var(--text)}
 
-.btn-github {
-  width: 100%; padding: 12px; background: transparent; color: var(--muted);
-  border: 1px solid var(--border); border-radius: 50px;
-  font-family: var(--fb); font-size: 14px; text-decoration: none;
-  cursor: pointer; transition: all .2s;
-}
-.btn-github:hover { border-color: var(--text); color: var(--text); }
-
-/* Gioco e Mappa */
 #game{position:fixed;inset:0;display:none}
 #mly{position:absolute;inset:0;width:100vw;height:100vh}
 
@@ -82,56 +53,21 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .dot.done{background:var(--accent)}
 .dot.active{background:var(--accent2);transform:scale(1.35)}
 
-#map-wrap{
-  position:absolute;bottom:22px;right:22px;z-index:200;
-  width:300px;height:200px;
-  border-radius:var(--r);border:2px solid var(--border);
-  overflow:hidden;box-shadow:var(--sh);cursor:crosshair;
-  transition:width .32s cubic-bezier(.4,0,.2,1),height .32s cubic-bezier(.4,0,.2,1),border-color .25s;
-}
+#map-wrap{position:absolute;bottom:22px;right:22px;z-index:200;width:300px;height:200px;border-radius:var(--r);border:2px solid var(--border);overflow:hidden;box-shadow:var(--sh);cursor:crosshair;transition:width .32s cubic-bezier(.4,0,.2,1),height .32s cubic-bezier(.4,0,.2,1),border-color .25s}
 #map-wrap.big{width:520px;height:360px;border-color:var(--accent)}
 #lmap{width:100%;height:100%}
 
-#map-controls{
-  position:absolute;bottom:22px;right:22px;z-index:201;
-  display:flex;flex-direction:column;align-items:flex-end;gap:8px;
-  pointer-events:none;
-}
-#map-hint{
-  position:absolute;bottom:260px;right:22px;z-index:201;
-  font-size:11px;color:var(--muted);letter-spacing:1px;
-  background:rgba(8,11,15,.7);padding:4px 10px;border-radius:20px;
-  pointer-events:none;transition:opacity .3s;
-  white-space:nowrap;
-}
+#map-controls{position:absolute;bottom:22px;right:22px;z-index:201;display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none}
+#map-hint{position:absolute;bottom:260px;right:22px;z-index:201;font-size:11px;color:var(--muted);letter-spacing:1px;background:rgba(8,11,15,.7);padding:4px 10px;border-radius:20px;pointer-events:none;transition:opacity .3s;white-space:nowrap}
 #map-hint.gone{opacity:0}
-#btn-confirm{
-  position:absolute;bottom:260px;right:22px;z-index:201;
-  padding:11px 30px;background:var(--accent);color:#08090c;
-  border:none;border-radius:50px;font-family:var(--fh);font-size:19px;letter-spacing:2px;
-  cursor:pointer;pointer-events:none;
-  opacity:0;transform:translateY(6px);
-  transition:opacity .25s,transform .25s,box-shadow .2s;
-  box-shadow:0 4px 22px var(--glow);
-}
+#btn-confirm{position:absolute;bottom:260px;right:22px;z-index:201;padding:11px 30px;background:var(--accent);color:#08090c;border:none;border-radius:50px;font-family:var(--fh);font-size:19px;letter-spacing:2px;cursor:pointer;pointer-events:none;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s,box-shadow .2s;box-shadow:0 4px 22px var(--glow)}
 #btn-confirm.show{opacity:1;pointer-events:all;transform:translateY(0)}
 #btn-confirm:hover{box-shadow:0 8px 34px rgba(242,199,68,.55);transform:translateY(-2px)}
-
-#toggle-map{
-  position:absolute;bottom:222px;right:22px;z-index:202;
-  width:28px;height:28px;background:rgba(8,11,15,.8);
-  border:1px solid var(--border);border-radius:6px;
-  color:var(--muted);font-size:14px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:color .2s,border-color .2s;
-}
+#toggle-map{position:absolute;bottom:222px;right:22px;z-index:202;width:28px;height:28px;background:rgba(8,11,15,.8);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .2s,border-color .2s}
 #toggle-map:hover{color:var(--accent);border-color:var(--accent)}
-#toggle-map.big{bottom:382px}
-
 #toast{position:absolute;top:72px;left:50%;transform:translateX(-50%);background:#2a0f0f;border:1px solid var(--err);color:#f08080;font-size:12px;letter-spacing:1px;padding:9px 20px;border-radius:50px;z-index:300;opacity:0;pointer-events:none;transition:opacity .3s;max-width:90vw;text-align:center}
 #toast.show{opacity:1}
 
-/* Modali di fine round/partita */
 #round-ov{position:fixed;inset:0;z-index:500;background:rgba(4,6,10,.87);backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center}
 #round-ov.show{display:flex}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:34px 42px;max-width:500px;width:92%;text-align:center;box-shadow:var(--sh);animation:popIn .38s cubic-bezier(.2,.8,.3,1) forwards}
@@ -177,7 +113,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
     <div class="tagline">Street View World Explorer</div>
     <div class="splash-hr"></div>
     <p class="splash-desc">Esplora il mondo attraverso gli occhi di Mapillary.<br>5 round — indovina dove ti trovi.</p>
-    
     <div class="menu-actions">
       <button class="btn-start" onclick="startGame()">▶ GIOCA ORA</button>
       <a href="https://github.com/LordCambionGaming/geoSpy" target="_blank" class="btn-github">Codice su GitHub</a>
@@ -231,64 +166,51 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 <script src="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const TOKEN = 'REPLACE_ME_WITH_TOKEN';
+const TOKEN = 'MLY|35917489484515945|6d29cf0f508c96f416791fa48dcb7354';
 
-if (!TOKEN) {
-  document.querySelector('.splash-desc').textContent =
-    '⚠️ Manca il file config.js o il token Mapillary.';
-  document.querySelector('.btn-start').disabled = true;
+if(!TOKEN || TOKEN === 'REPLACE_ME_WITH_TOKEN'){
+  document.querySelector('.splash-desc').textContent='Token Mapillary non configurato.';
+  document.querySelector('.btn-start').disabled=true;
 }
 
-const WORLD_ZONES = [
-  // Europa
+const WORLD_ZONES=[
   {lat:48.85,lng:2.35},{lat:51.50,lng:-0.12},{lat:41.90,lng:12.49},{lat:52.52,lng:13.40},
   {lat:40.41,lng:-3.70},{lat:48.20,lng:16.37},{lat:50.08,lng:14.43},{lat:53.34,lng:-6.26},
   {lat:59.33,lng:18.06},{lat:55.67,lng:12.57},{lat:60.17,lng:24.94},{lat:47.37,lng:8.54},
   {lat:45.46,lng:9.19},{lat:43.30,lng:5.37},{lat:50.85,lng:4.35},{lat:52.37,lng:4.90},
   {lat:38.72,lng:-9.14},{lat:37.98,lng:23.73},{lat:44.80,lng:20.46},{lat:47.50,lng:19.04},
-  // Nord America
   {lat:40.71,lng:-74.01},{lat:34.05,lng:-118.24},{lat:41.88,lng:-87.63},{lat:29.76,lng:-95.37},
   {lat:33.45,lng:-112.07},{lat:47.61,lng:-122.33},{lat:25.77,lng:-80.19},{lat:37.77,lng:-122.42},
   {lat:45.42,lng:-75.69},{lat:43.65,lng:-79.38},{lat:45.51,lng:-73.55},{lat:49.25,lng:-123.12},
   {lat:19.43,lng:-99.13},{lat:20.97,lng:-89.62},{lat:14.09,lng:-87.20},{lat:9.93,lng:-84.08},
-  // Sud America
   {lat:-23.55,lng:-46.63},{lat:-34.61,lng:-58.38},{lat:-33.46,lng:-70.65},{lat:-12.05,lng:-77.04},
   {lat:-15.78,lng:-47.93},{lat:4.71,lng:-74.07},{lat:10.48,lng:-66.90},
-  // Asia
   {lat:35.69,lng:139.69},{lat:37.57,lng:126.98},{lat:31.23,lng:121.47},{lat:39.90,lng:116.40},
   {lat:1.35,lng:103.82},{lat:13.75,lng:100.52},{lat:3.14,lng:101.69},
   {lat:28.61,lng:77.21},{lat:19.08,lng:72.88},{lat:12.97,lng:77.59},
   {lat:35.68,lng:51.39},{lat:41.30,lng:69.24},{lat:43.24,lng:76.95},
-  // Medio Oriente
   {lat:25.20,lng:55.27},{lat:24.69,lng:46.72},{lat:30.06,lng:31.25},{lat:33.89,lng:35.50},
-  // Africa
   {lat:-33.92,lng:18.42},{lat:-26.20,lng:28.04},{lat:-1.29,lng:36.82},{lat:5.56,lng:-0.21},
   {lat:6.37,lng:2.39},{lat:-18.91,lng:47.54},{lat:-4.32,lng:15.32},
-  // Oceania
-  {lat:-33.87,lng:151.21},{lat:-37.81,lng:144.96},{lat:-27.47,lng:153.02},{lat:-36.87,lng:174.76},
+  {lat:-33.87,lng:151.21},{lat:-37.81,lng:144.96},{lat:-27.47,lng:153.02},{lat:-36.87,lng:174.76}
 ];
 
 function randomZone(){
   const z=WORLD_ZONES[Math.floor(Math.random()*WORLD_ZONES.length)];
-  // Ci spostiamo casualmente dal centro della città
   const jLat=(Math.random()-0.5)*0.03;
   const jLng=(Math.random()-0.5)*0.03;
-  
-  // Scatola più piccola (circa 1x1 km) per non far esplodere i server di Mapillary
-  const d=0.005; 
-  
+  const d=0.01;
   const lat=z.lat+jLat, lng=z.lng+jLng;
-  return {
-    lat, lng,
+  return{
+    lat,lng,
     bbox:`${(lng-d).toFixed(5)},${(lat-d).toFixed(5)},${(lng+d).toFixed(5)},${(lat+d).toFixed(5)}`
   };
 }
 
-const D_DECAY=2000, MAX_SCORE=5000, TOTAL_ROUNDS=5, PERFECT_KM=0.1, FB_TIMEOUT=10000;
-
-let viewer=null, lmap=null, resMap=null;
-let round=0, totalScore=0, roundScores=[], guessLL=null, guessMarker=null;
-let shuffled=[], fbTimer=null, mapBig=false;
+const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=15000;
+let viewer=null,lmap=null,resMap=null;
+let round=0,totalScore=0,roundScores=[],guessLL=null,guessMarker=null;
+let shuffled=[],fbTimer=null,mapBig=false;
 
 function haversine(la1,lo1,la2,lo2){
   const R=6371,dL=(la2-la1)*Math.PI/180,dN=(lo2-lo1)*Math.PI/180;
@@ -297,24 +219,23 @@ function haversine(la1,lo1,la2,lo2){
 }
 function calcScore(km){return km<PERFECT_KM?MAX_SCORE:Math.round(MAX_SCORE*Math.exp(-km/D_DECAY))}
 function fmtDist(km){
-  if(km<1) return `${Math.round(km*1000)} m`;
-  if(km<100) return `${km.toFixed(1)} km`;
+  if(km<1)return `${Math.round(km*1000)} m`;
+  if(km<100)return `${km.toFixed(1)} km`;
   return `${Math.round(km).toLocaleString('it-IT')} km`;
 }
 function getRank(s){
   const p=s/(MAX_SCORE*TOTAL_ROUNDS);
-  if(p>=.95) return 'Esploratore Leggendario 🌍';
-  if(p>=.80) return 'Esperto Geografo 🗺️';
-  if(p>=.60) return 'Viaggiatore Consumato ✈️';
-  if(p>=.40) return 'Avventuriero 🧭';
-  if(p>=.20) return 'Turista alle prime armi 📸';
-  return 'Perso nel Mondo 😅';
+  if(p>=.95)return 'Esploratore Leggendario';
+  if(p>=.80)return 'Esperto Geografo';
+  if(p>=.60)return 'Viaggiatore Consumato';
+  if(p>=.40)return 'Avventuriero';
+  if(p>=.20)return 'Turista alle prime armi';
+  return 'Perso nel Mondo';
 }
-function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
 function showToast(msg,ms=4000){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms);
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),ms);
 }
 function setVeil(on,msg='Caricamento…'){
   const v=document.getElementById('veil');
@@ -352,26 +273,16 @@ function toggleMap(){
   setTimeout(()=>{if(lmap)lmap.invalidateSize()},340);
 }
 
-// Nuova funzione per chiamare l'API con gestione errori e log in console
 async function fetchImageId(bbox){
-  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id&bbox=${bbox}&limit=20`;
+  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id&bbox=${bbox}&limit=1`;
   try{
     const r=await fetch(url);
-    if(!r.ok) {
-      const errorData = await r.json();
-      console.error("Errore API Mapillary:", errorData);
-      return null;
-    }
+    if(!r.ok)return null;
     const d=await r.json();
     const imgs=d.data||[];
-    if(!imgs.length) {
-      console.warn("Nessuna immagine trovata in quest'area:", bbox);
-      return null;
-    }
-    const pick=imgs[Math.floor(Math.random()*imgs.length)];
-    return pick.id;
+    if(!imgs.length)return null;
+    return imgs[0].id;
   }catch(e){
-    console.error("Errore di rete o fetch fallito:", e);
     return null;
   }
 }
@@ -391,39 +302,24 @@ function startGame(){
 }
 
 function resetState(){
-  shuffled=[];
-  round=0; totalScore=0; roundScores=[];
-  guessLL=null; guessMarker=null; mapBig=false;
+  shuffled=[];round=0;totalScore=0;roundScores=[];
+  guessLL=null;guessMarker=null;mapBig=false;
   document.getElementById('map-wrap').classList.remove('big');
   document.getElementById('toggle-map').textContent='⛶';
 }
 
 function initLeaflet(){
   if(lmap){lmap.remove();lmap=null}
-  
-  // Limiti per impedire di scorrere fuori dal mondo
-  const bounds = L.latLngBounds(L.latLng(-89.981557, -180), L.latLng(89.993461, 180));
-
-  lmap=L.map('lmap',{
-    center:[20,0],
-    zoom:2,
-    minZoom: 2, 
-    maxBounds: bounds, 
-    maxBoundsViscosity: 1.0, 
-    zoomControl:false,
-    attributionControl:false
-  });
-  
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    {subdomains:'abcd',maxZoom:19, noWrap: true}).addTo(lmap);
-  
+  const bounds=L.latLngBounds(L.latLng(-89.9,-180),L.latLng(89.9,180));
+  lmap=L.map('lmap',{center:[20,0],zoom:2,minZoom:2,maxBounds:bounds,maxBoundsViscosity:1.0,zoomControl:false,attributionControl:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,noWrap:true}).addTo(lmap);
   lmap.on('click',onMapClick);
 }
 
 function onMapClick(e){
   guessLL=e.latlng;
   const icon=L.divIcon({className:'',html:'<div class="u-pin"></div>',iconSize:[13,13],iconAnchor:[6,6]});
-  if(guessMarker) guessMarker.setLatLng(guessLL);
+  if(guessMarker)guessMarker.setLatLng(guessLL);
   else guessMarker=L.marker(guessLL,{icon}).addTo(lmap);
   document.getElementById('btn-confirm').classList.add('show');
   document.getElementById('map-hint').classList.add('gone');
@@ -437,16 +333,15 @@ async function loadRound(){
 }
 
 async function findAndLoadImage(attempt=0){
-  if(attempt>12){
+  if(attempt>15){
     setVeil(false);
-    showToast('⚠️ Impossibile trovare immagini. Controlla il token o la console F12.');
+    showToast('Impossibile trovare immagini. Fai un guess a caso.');
     document.getElementById('btn-confirm').classList.add('show');
     return;
   }
   const zone=randomZone();
-  if(!shuffled[round]) shuffled[round]={lat:zone.lat,lng:zone.lng};
-  else { shuffled[round].lat=zone.lat; shuffled[round].lng=zone.lng; }
-
+  if(!shuffled[round])shuffled[round]={lat:zone.lat,lng:zone.lng};
+  else{shuffled[round].lat=zone.lat;shuffled[round].lng=zone.lng;}
   setVeil(true,`Ricerca immagine… (zona ${attempt+1})`);
   const imageId=await fetchImageId(zone.bbox);
   if(!imageId){
@@ -454,13 +349,13 @@ async function findAndLoadImage(attempt=0){
     return;
   }
   shuffled[round]={lat:zone.lat,lng:zone.lng};
-  if(!viewer) createViewer(imageId);
+  if(!viewer)createViewer(imageId);
   else moveTo(imageId);
 }
 
 let readyFired=false;
 function onReady(){
-  if(readyFired) return;
+  if(readyFired)return;
   readyFired=true;
   clearFb();
   setVeil(false);
@@ -478,12 +373,11 @@ function createViewer(imageId){
       imageId:imageId,
       component:{cover:false,navigation:true,sequence:true,direction:true}
     });
-    viewer.on(mapillary.ViewerEventType.LOAD,onReady);
+    viewer.on('load',onReady);
     startFbTimer();
   }catch(e){
-    console.error(e);
     setVeil(false);
-    showToast('⚠️ Errore viewer. Verifica il token.');
+    showToast('Errore viewer.');
   }
 }
 
@@ -491,7 +385,7 @@ function moveTo(imageId){
   readyFired=false;
   viewer.moveTo(imageId).then(onReady).catch(()=>{
     setVeil(false);
-    showToast('⚠️ Impossibile caricare questa immagine.');
+    showToast('Impossibile caricare questa immagine.');
   });
   startFbTimer();
 }
@@ -501,14 +395,14 @@ function startFbTimer(){
   fbTimer=setTimeout(()=>{
     if(!document.getElementById('veil').classList.contains('gone')){
       setVeil(false);
-      showToast('⚠️ Il viewer impiega troppo. Prova a fare il guess sulla mappa.');
+      showToast('Il viewer impiega troppo. Prova a fare il guess sulla mappa.');
       document.getElementById('btn-confirm').classList.add('show');
     }
   },FB_TIMEOUT);
 }
 
 function confirmGuess(){
-  if(!guessLL) return;
+  if(!guessLL)return;
   clearFb();
   const loc=shuffled[round];
   const dist=haversine(guessLL.lat,guessLL.lng,loc.lat,loc.lng);
@@ -523,24 +417,20 @@ function showRoundResult(score,dist,gLL,rLL){
   document.getElementById('r-num').textContent=round+1;
   document.getElementById('r-score').textContent=score.toLocaleString('it-IT');
   document.getElementById('r-dist').textContent=fmtDist(dist);
-  document.getElementById('btn-next').textContent=
-    (round===TOTAL_ROUNDS-1)?'RISULTATO FINALE →':'AVANTI →';
+  document.getElementById('btn-next').textContent=(round===TOTAL_ROUNDS-1)?'RISULTATO FINALE →':'AVANTI →';
   document.getElementById('round-ov').classList.add('show');
   setTimeout(()=>buildResMap(gLL,rLL),80);
 }
 
 function buildResMap(gLL,rLL){
   if(resMap){resMap.remove();resMap=null}
-  resMap=L.map('res-map',{zoomControl:false,attributionControl:false,
-    dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    {subdomains:'abcd',maxZoom:18}).addTo(resMap);
+  resMap=L.map('res-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:18}).addTo(resMap);
   const uI=L.divIcon({className:'',html:'<div class="u-pin"></div>',iconSize:[13,13],iconAnchor:[6,6]});
   const rI=L.divIcon({className:'',html:'<div class="r-pin"></div>',iconSize:[13,13],iconAnchor:[6,6]});
   L.marker([gLL.lat,gLL.lng],{icon:uI}).addTo(resMap);
   L.marker([rLL.lat,rLL.lng],{icon:rI}).addTo(resMap);
-  L.polyline([[gLL.lat,gLL.lng],[rLL.lat,rLL.lng]],
-    {color:'#f2c744',weight:2,dashArray:'7 9',opacity:.85}).addTo(resMap);
+  L.polyline([[gLL.lat,gLL.lng],[rLL.lat,rLL.lng]],{color:'#f2c744',weight:2,dashArray:'7 9',opacity:.85}).addTo(resMap);
   resMap.fitBounds(L.latLngBounds([gLL.lat,gLL.lng],[rLL.lat,rLL.lng]).pad(.3));
 }
 
@@ -548,7 +438,7 @@ function nextRound(){
   document.getElementById('round-ov').classList.remove('show');
   round++;
   if(round>=TOTAL_ROUNDS){showFinal();return}
-  shuffled[round]=null; 
+  shuffled[round]=null;
   resetGuessUI();
   loadRound();
 }
@@ -558,7 +448,7 @@ function resetGuessUI(){
   if(guessMarker&&lmap){lmap.removeLayer(guessMarker);guessMarker=null}
   document.getElementById('btn-confirm').classList.remove('show');
   document.getElementById('map-hint').classList.remove('gone');
-  if(lmap) lmap.setView([20,0],2);
+  if(lmap)lmap.setView([20,0],2);
 }
 
 function updateHUD(){
@@ -566,10 +456,10 @@ function updateHUD(){
   document.getElementById('h-score').textContent=totalScore.toLocaleString('it-IT');
   for(let i=0;i<TOTAL_ROUNDS;i++){
     const d=document.getElementById(`d${i}`);
-    if(!d) continue;
+    if(!d)continue;
     d.className='dot';
-    if(i<round) d.classList.add('done');
-    else if(i===round) d.classList.add('active');
+    if(i<round)d.classList.add('done');
+    else if(i===round)d.classList.add('active');
   }
 }
 
@@ -607,8 +497,8 @@ function restartGame(){
 }
 
 window.addEventListener('resize',()=>{
-  if(viewer) viewer.resize();
-  if(lmap) lmap.invalidateSize();
+  if(viewer)viewer.resize();
+  if(lmap)lmap.invalidateSize();
   updateTogglePos();
   updateConfirmPos();
 });
