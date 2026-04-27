@@ -26,7 +26,20 @@ jobs:
 
       - name: Inject Mapillary Token
         run: |
-          sed -i 's|REPLACE_ME_WITH_TOKEN|${{ secrets.MAPILLARY_TOKEN }}|g' index.html
+          node -e "
+          const fs = require('fs');
+          const filePath = 'index.html';
+          let content = fs.readFileSync(filePath, 'utf8');
+          const token = process.env.MAPILLARY_TOKEN;
+          if (!token) {
+            console.error('ERRORE: Segreto MAPILLARY_TOKEN non trovato!');
+            process.exit(1);
+          }
+          content = content.replace('REPLACE_ME_WITH_TOKEN', token);
+          fs.writeFileSync(filePath, content);
+          "
+        env:
+          MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
