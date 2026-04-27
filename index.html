@@ -194,8 +194,7 @@ function randomZone(){
   const z=WORLD_ZONES[Math.floor(Math.random()*WORLD_ZONES.length)];
   const jLat=(Math.random()-0.5)*0.03;
   const jLng=(Math.random()-0.5)*0.03;
-  // BBox microscopico per evitare l'errore 500
-  const d=0.002; 
+  const d=0.005; 
   const lat=z.lat+jLat, lng=z.lng+jLng;
   return{
     lat,lng,
@@ -203,8 +202,8 @@ function randomZone(){
   };
 }
 
-const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=3500;
-let viewer=null,lmap=null,resMap=null;
+const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=3000;
+let viewer=null,lmap=null,resMap=null,isViewerReady=false;
 let round=0,totalScore=0,roundScores=[],guessLL=null,guessMarker=null;
 let shuffled=[],fbTimer=null,mapBig=false;
 
@@ -270,13 +269,14 @@ function toggleMap(){
 }
 
 async function fetchImageId(bbox){
-  // Aggiunto &fields=id,geometry per estrarre il punto esatto. Limitato a 1.
-  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id,geometry&bbox=${bbox}&is_pano=true&limit=1`;
+  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id,geometry&bbox=${bbox}&is_pano=true&limit=10`;
   try{
     const r=await fetch(url);
-    if(!r.ok) return null;
+    if(!r.ok) return null; // Salta immediatamente in caso di errore 500
     const d=await r.json();
-    return (d.data && d.data.length > 0) ? d.data[0] : null;
+    const imgs=d.data||[];
+    if(!imgs.length) return null;
+    return imgs[Math.floor(Math.random()*imgs.length)];
   }catch(e){
     return null;
   }
@@ -327,80 +327,64 @@ async function loadRound(){
 }
 
 async function findAndLoadImage(attempt=0){
-  if(attempt > 20){
+  if(attempt > 10){
     setVeil(false);
-    showToast('Impossibile connettersi a Mapillary. Tira a indovinare!');
+    showToast('I server di Mapillary sono sovraccarichi. Tira a indovinare!');
     document.getElementById('btn-confirm').classList.add('show');
     return;
   }
   
-  setVeil(true, attempt > 0 ? `Cerco un'area valida... (${attempt})` : 'Teletrasporto in corso...');
+  setVeil(true, attempt > 0 ? `Cerco un'area valida... (${attempt}/10)` : 'Teletrasporto in corso...');
   
-  const zone=randomZone();
-  const imageData=await fetchImageId(zone.bbox);
+  const zone = randomZone();
+  const imageData = await fetchImageId(zone.bbox);
   
   if(!imageData){
-    await findAndLoadImage(attempt+1);
-    return;
+    return findAndLoadImage(attempt+1);
   }
   
-  // Usiamo le coordinate reali precise restituite dall'API per calcolare i punti
-  shuffled[round] = { 
-    lat: imageData.geometry.coordinates[1], 
-    lng: imageData.geometry.coordinates[0] 
-  };
+  shuffled[round] = { lat: imageData.geometry.coordinates[1], lng: imageData.geometry.coordinates[0] };
   
-  if(!viewer) createViewer(imageData.id, attempt);
-  else moveTo(imageData.id, attempt);
-}
-
-let readyFired=false;
-function onReady(){
-  if(readyFired)return;
-  readyFired=true;
-  clearFb();
-  setVeil(false);
-  viewer.resize();
+  // Distruggiamo e ricreiamo SEMPRE il visualizzatore per ripulire vecchi crash di Mapillary
+  createViewer(imageData.id, attempt);
 }
 
 function createViewer(imageId, attempt){
-  if(viewer){try{viewer.remove()}catch(e){}viewer=null}
+  if(viewer){
+    try{viewer.remove()}catch(e){}
+    viewer=null;
+  }
   document.getElementById('mly').innerHTML='';
-  readyFired=false;
+  isViewerReady = false;
+  
   try{
     viewer=new mapillary.Viewer({
       accessToken:TOKEN,
       container:'mly',
       imageId:imageId,
-      component:{
-        cover:false,
-        navigation:true, // Frecce a terra
-        sequence:true,   // Navigazione tra le foto
-        direction:true,  
-        spatial:true     // Navigazione 3D fluida
-      }
+      // IMPORTANTISSIMO: niente componente "spatial" per evitare il blocco per mesh corrotte!
+      component:{cover:false, navigation:true, sequence:true, direction:true}
     });
-    viewer.on('load', onReady);
+    
+    viewer.on('load', () => {
+      isViewerReady = true;
+      clearFb();
+      setVeil(false);
+      viewer.resize();
+    });
+    
     startFbTimer(attempt);
   }catch(e){
     findAndLoadImage(attempt+1);
   }
 }
 
-function moveTo(imageId, attempt){
-  readyFired=false;
-  viewer.moveTo(imageId).then(onReady).catch(()=>{
-    // Timeout o errore di Mapillary, passa alla prossima coordinata senza crash
-    findAndLoadImage(attempt+1);
-  });
-  startFbTimer(attempt);
-}
-
 function startFbTimer(attempt){
   clearFb();
   fbTimer=setTimeout(()=>{
-    if(!document.getElementById('veil').classList.contains('gone')){
-      findAndLoadImage(attempt+1); // Se il viewer si blocca, riprova subito
+    if(!isViewerReady){
+      // Se dopo 3 secondi il viewer non ha emesso l'evento 'load', scartiamo la foto
+      findAndLoadImage(attempt+1); 
     }
   }, FB_TIMEOUT);
 }
