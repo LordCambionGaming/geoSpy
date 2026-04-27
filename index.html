@@ -194,7 +194,8 @@ function randomZone(){
   const z=WORLD_ZONES[Math.floor(Math.random()*WORLD_ZONES.length)];
   const jLat=(Math.random()-0.5)*0.03;
   const jLng=(Math.random()-0.5)*0.03;
-  const d=0.005; 
+  // Box ultra-piccolo (circa 100m) per far felice il server Mapillary e annullare gli errori 500
+  const d=0.001; 
   const lat=z.lat+jLat, lng=z.lng+jLng;
   return{
     lat,lng,
@@ -202,11 +203,11 @@ function randomZone(){
   };
 }
 
-const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=8000;
-let viewer=null,lmap=null,resMap=null;
+const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=6000;
+let viewer=null,lmap=null,resMap=null,isViewerReady=false;
 let round=0,totalScore=0,roundScores=[],guessLL=null,guessMarker=null;
 let shuffled=[],fbTimer=null,mapBig=false;
-let currentAttemptToken = 0; // Il token previene la "corsa contro il tempo"
+let currentAttemptToken = 0;
 
 function haversine(la1,lo1,la2,lo2){
   const R=6371,dL=(la2-la1)*Math.PI/180,dN=(lo2-lo1)*Math.PI/180;
@@ -270,14 +271,14 @@ function toggleMap(){
 }
 
 async function fetchImageId(bbox){
-  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id,geometry&bbox=${bbox}&is_pano=true&limit=10`;
+  const url=`https://graph.mapillary.com/images?access_token=${TOKEN}&fields=id,geometry&bbox=${bbox}&is_pano=true&limit=1`;
   try{
     const r=await fetch(url);
     if(!r.ok) return null;
     const d=await r.json();
     const imgs=d.data||[];
     if(!imgs.length) return null;
-    return imgs[Math.floor(Math.random()*imgs.length)];
+    return imgs[0];
   }catch(e){
     return null;
   }
@@ -343,7 +344,6 @@ async function findAndLoadImage(attempt=0){
   const zone = randomZone();
   const imageData = await fetchImageId(zone.bbox);
   
-  // Se nel frattempo un altro loop è diventato quello principale, annulla questo.
   if (myToken !== currentAttemptToken) return;
 
   if(!imageData){
@@ -352,47 +352,50 @@ async function findAndLoadImage(attempt=0){
   
   shuffled[round] = { lat: imageData.geometry.coordinates[1], lng: imageData.geometry.coordinates[0] };
   
-  try {
-      if (!viewer) {
-          // Creiamo il visualizzatore 3D UNA SINGOLA VOLTA
-          viewer = new mapillary.Viewer({
-              accessToken: TOKEN,
-              container: 'mly',
-              imageId: imageData.id,
-              component: { cover: false, navigation: true, sequence: true, direction: true }
-          });
-          
-          viewer.on('load', () => {
-              if(myToken === currentAttemptToken) {
-                  setVeil(false);
-                  clearFb();
-                  viewer.resize();
-              }
-          });
-      } else {
-          // Usiamo moveTo per spostarlo senza doverlo distruggere. Addio Context Lost!
-          await viewer.moveTo(imageData.id);
+  if (!viewer) {
+      viewer = new mapillary.Viewer({
+          accessToken: TOKEN,
+          container: 'mly',
+          imageId: imageData.id,
+          component: { cover: false, navigation: true, sequence: true, direction: true }
+      });
+      
+      viewer.on('load', () => {
           if(myToken === currentAttemptToken) {
+              isViewerReady = true;
               setVeil(false);
               clearFb();
               viewer.resize();
           }
-      }
+      });
       
       startFbTimer(attempt, myToken);
-
-  } catch(e) {
-      if (myToken === currentAttemptToken) {
-          findAndLoadImage(attempt+1);
-      }
+  } else {
+      startFbTimer(attempt, myToken);
+      
+      // La chiave è qui: se moveTo fallisce, ignoro l'errore e scopro l'immagine, invece di riavviare!
+      viewer.moveTo(imageData.id).then(() => {
+          if(myToken === currentAttemptToken) {
+              isViewerReady = true;
+              setVeil(false);
+              clearFb();
+              viewer.resize();
+          }
+      }).catch((e) => {
+          console.warn("Errore Mesh di Mapillary ignorato. Immagine visibile.");
+          if(myToken === currentAttemptToken) {
+              isViewerReady = true;
+              setVeil(false);
+              clearFb();
+          }
+      });
   }
 }
 
 function startFbTimer(attempt, myToken){
   clearFb();
   fbTimer=setTimeout(()=>{
-    // Controlla se è il caricamento corrente ed è ancora bloccato nella schermata di attesa
-    if(myToken === currentAttemptToken && !document.getElementById('veil').classList.contains('gone')){
+    if(myToken === currentAttemptToken && !isViewerReady){
       findAndLoadImage(attempt+1); 
     }
   }, FB_TIMEOUT);
