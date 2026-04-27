@@ -203,10 +203,10 @@ function randomZone(){
 }
 
 const D_DECAY=2000,MAX_SCORE=5000,TOTAL_ROUNDS=5,PERFECT_KM=0.1,FB_TIMEOUT=8000;
-let viewer=null,lmap=null,resMap=null,isViewerReady=false;
+let viewer=null,lmap=null,resMap=null;
 let round=0,totalScore=0,roundScores=[],guessLL=null,guessMarker=null;
 let shuffled=[],fbTimer=null,mapBig=false;
-let currentAttemptToken = 0; // Previene accavallamenti tra caricamenti
+let currentAttemptToken = 0; // Il token previene la "corsa contro il tempo"
 
 function haversine(la1,lo1,la2,lo2){
   const R=6371,dL=(la2-la1)*Math.PI/180,dN=(lo2-lo1)*Math.PI/180;
@@ -333,7 +333,7 @@ async function findAndLoadImage(attempt=0){
 
   if(attempt > 15){
     setVeil(false);
-    showToast('Impossibile caricare immagini. Tira a indovinare sulla mappa!');
+    showToast('I server di Mapillary sono sovraccarichi. Tira a indovinare!');
     document.getElementById('btn-confirm').classList.add('show');
     return;
   }
@@ -343,7 +343,7 @@ async function findAndLoadImage(attempt=0){
   const zone = randomZone();
   const imageData = await fetchImageId(zone.bbox);
   
-  // Se nel frattempo è partito un altro caricamento, fermati.
+  // Se nel frattempo un altro loop è diventato quello principale, annulla questo.
   if (myToken !== currentAttemptToken) return;
 
   if(!imageData){
@@ -352,48 +352,47 @@ async function findAndLoadImage(attempt=0){
   
   shuffled[round] = { lat: imageData.geometry.coordinates[1], lng: imageData.geometry.coordinates[0] };
   
-  createViewer(imageData.id, attempt, myToken);
-}
-
-function createViewer(imageId, attempt, myToken){
-  if(viewer){
-    try{viewer.remove()}catch(e){}
-    viewer=null;
-  }
-  document.getElementById('mly').innerHTML='';
-  isViewerReady = false;
-  
-  try{
-    viewer=new mapillary.Viewer({
-      accessToken:TOKEN,
-      container:'mly',
-      imageId:imageId,
-      component:{cover:false, navigation:true, sequence:true, direction:true}
-    });
-    
-    viewer.on('load', () => {
-      // Se questo caricamento è vecchio, ignoralo
-      if (myToken !== currentAttemptToken) return;
+  try {
+      if (!viewer) {
+          // Creiamo il visualizzatore 3D UNA SINGOLA VOLTA
+          viewer = new mapillary.Viewer({
+              accessToken: TOKEN,
+              container: 'mly',
+              imageId: imageData.id,
+              component: { cover: false, navigation: true, sequence: true, direction: true }
+          });
+          
+          viewer.on('load', () => {
+              if(myToken === currentAttemptToken) {
+                  setVeil(false);
+                  clearFb();
+                  viewer.resize();
+              }
+          });
+      } else {
+          // Usiamo moveTo per spostarlo senza doverlo distruggere. Addio Context Lost!
+          await viewer.moveTo(imageData.id);
+          if(myToken === currentAttemptToken) {
+              setVeil(false);
+              clearFb();
+              viewer.resize();
+          }
+      }
       
-      isViewerReady = true;
-      clearFb();
-      setVeil(false);
-      viewer.resize();
-    });
-    
-    startFbTimer(attempt, myToken);
-  }catch(e){
-    if (myToken === currentAttemptToken) {
-      findAndLoadImage(attempt+1);
-    }
+      startFbTimer(attempt, myToken);
+
+  } catch(e) {
+      if (myToken === currentAttemptToken) {
+          findAndLoadImage(attempt+1);
+      }
   }
 }
 
 function startFbTimer(attempt, myToken){
   clearFb();
   fbTimer=setTimeout(()=>{
-    // Scatta solo se è il caricamento corrente e non ha ancora finito
-    if(myToken === currentAttemptToken && !isViewerReady){
+    // Controlla se è il caricamento corrente ed è ancora bloccato nella schermata di attesa
+    if(myToken === currentAttemptToken && !document.getElementById('veil').classList.contains('gone')){
       findAndLoadImage(attempt+1); 
     }
   }, FB_TIMEOUT);
